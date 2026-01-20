@@ -26,22 +26,74 @@
                             muted: '#9CA3AF',
                             accent: '#6366F1'
                         }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
         }
     </script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000000; color: #E5E7EB; touch-action: none; /* Prevent default touch actions like scroll */ }
-        #viewport { width: 100%; height: 100%; cursor: grab; position: relative; overflow: hidden; background-color: #000000; touch-action: none; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; 
+            background: linear-gradient(135deg, #050505 0%, #0a0a0f 50%, #020202 100%);
+            background-size: 400% 400%;
+            animation: gradientBG 20s ease infinite;
+            color: #E5E7EB; 
+            touch-action: none; 
+        }
+        
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #viewport { width: 100%; height: 100%; cursor: grab; position: relative; overflow: hidden; touch-action: none; }
         #viewport:active { cursor: grabbing; }
         #canvas { transform-origin: 0 0; position: absolute; top: 0; left: 0; will-change: transform; }
-        .node-card { transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.2s ease, border-color 0.2s; }
-        .node-card:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(99, 102, 241, 0.3); border-color: #6366F1; z-index: 50; }
-        .half-card-hover:hover { background-color: rgba(255, 255, 255, 0.05); }
-        #connections { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-        path.connector { fill: none; stroke: #4B5563; stroke-width: 3px; transition: stroke 0.3s; shape-rendering: geometricPrecision; }
         
+        /* Node Animations */
+        .node-card { 
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s; 
+            opacity: 0; /* Hidden by default for animation */
+        }
+        .node-card.animate-in {
+            animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.5) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .node-card:hover { transform: scale(1.08) translateY(-5px); box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.5); border-color: #6366F1; z-index: 50; }
+        .half-card-hover:hover { background-color: rgba(255, 255, 255, 0.08); }
+        
+        #connections { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        
+        path.connector { 
+            fill: none; 
+            stroke: #4B5563; 
+            stroke-width: 6px; 
+            shape-rendering: geometricPrecision; 
+            opacity: 0;
+            transition: stroke 0.3s;
+        }
+        path.connector.animate-in {
+            animation: fadeInPath 1s ease-out forwards;
+        }
+        @keyframes fadeInPath { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* UI Entrance Animations */
+        @keyframes slideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .ui-header-enter { animation: slideDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        .ui-controls-enter { animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s backwards; }
+
         /* Detail View Transitions */
         #detail-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000000; z-index: 100; display: none; opacity: 0; transition: opacity 0.4s ease; overflow-y: auto; }
         #detail-view.active { display: flex; opacity: 1; }
@@ -58,14 +110,14 @@
 </head>
 <body>
     <!-- ================= UI HEADER ================= -->
-    <div class="fixed top-0 left-0 w-full z-50 pointer-events-none transition-opacity duration-300" id="tree-ui" style="opacity: 1;">
-        <div class="bg-black/80 backdrop-blur-md border-b border-gray-800 px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row justify-between items-center pointer-events-auto shadow-md gap-3 md:gap-0">
+    <div class="fixed top-0 left-0 w-full z-50 pointer-events-none ui-header-enter" id="tree-ui">
+        <div class="bg-black/70 backdrop-blur-xl border-b border-gray-800 px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row justify-between items-center pointer-events-auto shadow-2xl gap-3 md:gap-0 transition-all duration-300 hover:bg-black/80">
             
             <!-- LEFT: Title & Search -->
             <div class="flex flex-col md:flex-row items-center gap-3 md:gap-6 w-full md:w-auto">
                 <div class="flex items-center justify-between w-full md:w-auto">
-                    <h1 class="text-xl md:text-2xl font-serif text-white font-bold flex items-center gap-2">
-                        <span class="material-symbols-outlined text-indigo-500 text-2xl md:text-3xl">diversity_2</span>
+                    <h1 class="text-xl md:text-2xl font-serif text-white font-bold flex items-center gap-2 tracking-wide">
+                        <span class="material-symbols-outlined text-indigo-500 text-2xl md:text-3xl animate-pulse-slow">diversity_2</span>
                         Bonagiri's Legacy
                     </h1>
                     <!-- Status moved here for mobile layout -->
@@ -83,14 +135,14 @@
                 <!-- SEARCH BAR -->
                 <div class="relative w-full md:w-72 group z-[60]">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <span class="material-symbols-outlined text-gray-500 text-lg group-focus-within:text-indigo-400 transition-colors">search</span>
+                        <span class="material-symbols-outlined text-gray-500 text-lg group-focus-within:text-indigo-400 transition-colors duration-300">search</span>
                     </span>
                     <input type="text" id="search-bar" placeholder="Find family member..." 
-                        class="w-full bg-gray-900/50 border border-gray-700 text-gray-200 text-sm rounded-full focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 block pl-10 pr-4 py-2 outline-none transition-all placeholder-gray-600 focus:bg-gray-900"
+                        class="w-full bg-gray-900/50 border border-gray-700 text-gray-200 text-sm rounded-full focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 block pl-10 pr-4 py-2 outline-none transition-all duration-300 placeholder-gray-600 focus:bg-gray-900 focus:shadow-[0_0_15px_rgba(99,102,241,0.3)]"
                         autocomplete="off">
                     
                     <!-- Search Results Dropdown -->
-                    <div id="search-results" class="absolute top-full left-0 w-full bg-[#121212] border border-gray-700 rounded-lg mt-2 shadow-2xl hidden max-h-60 md:max-h-80 overflow-y-auto z-[70]">
+                    <div id="search-results" class="absolute top-full left-0 w-full bg-[#121212] border border-gray-700 rounded-lg mt-2 shadow-2xl hidden max-h-60 md:max-h-80 overflow-y-auto z-[70] transition-all duration-200 origin-top">
                         <!-- Results injected here -->
                     </div>
                 </div>
@@ -98,11 +150,11 @@
 
             <!-- RIGHT: Buttons -->
             <div class="flex gap-2 w-full md:w-auto justify-center md:justify-end">
-                <a href="Admin_Portal.html" class="flex-1 md:flex-none justify-center flex items-center gap-2 px-3 py-2 bg-gray-900 hover:bg-gray-800 text-gray-300 text-xs md:text-sm font-medium rounded-md transition shadow-lg border border-gray-700 pointer-events-auto hover:text-white no-underline">
+                <a href="Admin_Portal.html" class="flex-1 md:flex-none justify-center flex items-center gap-2 px-3 py-2 bg-gray-900/80 hover:bg-gray-800 text-gray-300 text-xs md:text-sm font-medium rounded-md transition-all duration-300 shadow-lg border border-gray-700 pointer-events-auto hover:text-white hover:border-gray-500 hover:shadow-indigo-500/10 no-underline">
                     <span class="material-symbols-outlined text-[16px] md:text-[18px]">admin_panel_settings</span>
                     Admin
                 </a>
-                <a href="User_Portal.html" class="flex-1 md:flex-none justify-center flex items-center gap-2 px-3 py-2 bg-indigo-900 hover:bg-indigo-800 text-white text-xs md:text-sm font-medium rounded-md transition shadow-lg border border-indigo-700 pointer-events-auto no-underline">
+                <a href="User_Portal.html" class="flex-1 md:flex-none justify-center flex items-center gap-2 px-3 py-2 bg-indigo-900/80 hover:bg-indigo-700 text-white text-xs md:text-sm font-medium rounded-md transition-all duration-300 shadow-lg border border-indigo-700 pointer-events-auto hover:shadow-indigo-500/30 no-underline">
                     <span class="material-symbols-outlined text-[16px] md:text-[18px]">account_circle</span>
                     Profile
                 </a>
@@ -111,11 +163,11 @@
     </div>
 
     <!-- ================= ZOOM CONTROLS ================= -->
-    <div class="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 flex flex-col gap-2 bg-[#121212] rounded-lg shadow-lg shadow-black/50 p-2 border border-gray-800 transition-opacity duration-300" id="tree-controls" style="opacity: 1;">
-        <button class="p-3 md:p-2 rounded hover:bg-gray-800 text-gray-300 hover:text-indigo-400 transition" onclick="zoomButton(1.3)">
+    <div class="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 flex flex-col gap-2 bg-[#121212] rounded-lg shadow-lg shadow-black/50 p-2 border border-gray-800 ui-controls-enter" id="tree-controls">
+        <button class="p-3 md:p-2 rounded hover:bg-gray-800 text-gray-300 hover:text-indigo-400 transition-colors duration-200 active:scale-95" onclick="zoomButton(1.3)">
             <span class="material-symbols-outlined text-xl md:text-lg">add</span>
         </button>
-        <button class="p-3 md:p-2 rounded hover:bg-gray-800 text-gray-300 hover:text-indigo-400 transition" onclick="zoomButton(1/1.3)">
+        <button class="p-3 md:p-2 rounded hover:bg-gray-800 text-gray-300 hover:text-indigo-400 transition-colors duration-200 active:scale-95" onclick="zoomButton(1/1.3)">
             <span class="material-symbols-outlined text-xl md:text-lg">remove</span>
         </button>
     </div>
@@ -130,17 +182,17 @@
 
     <!-- ================= DETAIL SIDEBAR ================= -->
     <div class="flex flex-col md:flex-row h-full" id="detail-view" style="opacity: 0;">
-        <button class="fixed top-4 left-4 md:top-6 md:left-6 z-50 bg-black/60 backdrop-blur-md text-white p-2 md:p-3 rounded-full hover:bg-white hover:text-black transition duration-300 border border-white/20 group flex items-center gap-2 pr-4 shadow-xl" onclick="closeDetailView()">
+        <button class="fixed top-4 left-4 md:top-6 md:left-6 z-50 bg-black/60 backdrop-blur-md text-white p-2 md:p-3 rounded-full hover:bg-white hover:text-black transition duration-300 border border-white/20 group flex items-center gap-2 pr-4 shadow-xl active:scale-95" onclick="closeDetailView()">
             <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
             <span class="font-medium text-xs md:text-sm">Back</span>
         </button>
         
         <!-- Image Section -->
         <div class="w-full md:w-1/2 h-[40vh] md:h-full relative bg-gray-900 border-b md:border-b-0 md:border-r border-gray-800 shrink-0">
-            <img alt="Profile" class="w-full h-full object-cover" id="detail-photo" src="">
+            <img alt="Profile" class="w-full h-full object-cover transition-transform duration-700 hover:scale-105" id="detail-photo" src="">
             <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90"></div>
             <div class="absolute bottom-6 left-6 right-6 md:bottom-8 md:left-8 md:right-8">
-                <div class="inline-block px-3 py-1 bg-indigo-600 text-white text-[10px] md:text-xs font-bold uppercase tracking-widest rounded-sm mb-2 md:mb-3" id="detail-generation-badge">Generation 3</div>
+                <div class="inline-block px-3 py-1 bg-indigo-600 text-white text-[10px] md:text-xs font-bold uppercase tracking-widest rounded-sm mb-2 md:mb-3 shadow-lg shadow-indigo-500/20" id="detail-generation-badge">Generation 3</div>
                 <h1 class="text-3xl md:text-6xl font-serif font-bold text-white shadow-black drop-shadow-lg leading-tight" id="detail-name-overlay">Name</h1>
             </div>
         </div>
@@ -148,6 +200,7 @@
         <!-- Info Section -->
         <div class="w-full md:w-1/2 h-auto md:h-full bg-[#050505] overflow-y-auto scrollbar-hide pb-20 md:pb-0">
             <div class="p-6 md:p-16 max-w-2xl mx-auto">
+                <!-- Content same as before, animations applied via CSS globally -->
                 <div class="grid grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8 border-b border-gray-800 pb-6 md:pb-8">
                     <div>
                         <span class="block text-[10px] md:text-xs text-gray-500 uppercase tracking-widest mb-1">Gender</span>
@@ -451,9 +504,14 @@
 
         function renderTree(node) {
             const el = document.createElement('div');
-            el.className = 'node-card absolute bg-[#121212] rounded-lg border border-gray-800 flex flex-col overflow-hidden z-10 shadow-lg';
+            el.className = 'node-card absolute bg-[#121212] rounded-lg border border-gray-800 flex flex-col overflow-hidden z-10 shadow-lg animate-in';
             el.style.width = `${CONFIG.NODE_WIDTH}px`; el.style.height = `${CONFIG.NODE_HEIGHT}px`;
             el.style.left = `${node.x}px`; el.style.top = `${node.y}px`;
+            
+            // ANIMATION DELAY LOGIC
+            // Delay depends on generation to create a "cascading" effect
+            const delay = node.generation * 200; 
+            el.style.animationDelay = `${delay}ms`;
             
             if (node.spouse) {
                 el.innerHTML = `<div class="flex h-full w-full"><div class="w-1/2 h-full border-r border-gray-800 flex flex-col group relative cursor-pointer half-card-hover" onclick="event.stopPropagation(); openDetailView('${node.id}', 'primary')"><div class="h-1/2 w-full relative overflow-hidden bg-gray-900"><img src="${node.primary.photo}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"></div><div class="h-1/2 w-full p-2 pt-4 flex flex-col items-center text-center"><span class="text-[9px] font-bold text-indigo-400 uppercase mb-1">Heir</span><h3 class="font-serif font-bold text-gray-200 text-sm mb-2 line-clamp-2">${node.primary.name}</h3><span class="text-[10px] text-gray-500">${node.primary.gender}</span></div></div><div class="w-1/2 h-full flex flex-col group relative cursor-pointer half-card-hover" onclick="event.stopPropagation(); openDetailView('${node.id}', 'spouse')"><div class="h-1/2 w-full relative overflow-hidden bg-gray-900"><img src="${node.spouse.photo}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"></div><div class="h-1/2 w-full p-2 pt-4 flex flex-col items-center text-center"><span class="text-[9px] font-bold text-pink-400 uppercase mb-1">Spouse</span><h3 class="font-serif font-bold text-gray-200 text-sm mb-2 line-clamp-2">${node.spouse.name}</h3><span class="text-[10px] text-gray-500">${node.spouse.gender}</span></div></div></div>`;
@@ -469,7 +527,9 @@
                     const cx = c.x + CONFIG.NODE_WIDTH/2; const cy = c.y;
                     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     path.setAttribute("d", `M ${px} ${py} V ${my} H ${cx} V ${cy}`);
-                    path.setAttribute("class", "connector");
+                    path.setAttribute("class", "connector animate-in");
+                    // Delay connecting lines slightly after the parent appears
+                    path.style.animationDelay = `${delay + 300}ms`;
                     document.getElementById('connections').appendChild(path);
                     renderTree(c);
                 });
@@ -647,20 +707,43 @@
             const vw = viewport.clientWidth;
             const vh = viewport.clientHeight;
             
-            // Calculate scale to fit width
+            // Calculate scale to fit BOTH width and height with padding
+            // We use 0.9 for width and 0.85 for height to leave space for headers
             const scaleX = (vw * 0.9) / treeBounds.width;
-            const scaleY = (vh * 0.9) / treeBounds.height;
-            const fitScale = Math.min(scaleX, scaleY, 1);
+            const scaleY = (vh * 0.85) / treeBounds.height;
             
-            state.target.scale = Math.max(0.05, fitScale);
+            // Use the smaller scale to ensure the whole tree fits
+            let optimalScale = Math.min(scaleX, scaleY);
+
+            // Clamp the scale to reasonable defaults
+            if (optimalScale < 0.2) optimalScale = 0.2; // Don't get too microscopic
+            if (optimalScale > 1.1) optimalScale = 1.1; // Don't over-zoom small trees
             
+            state.target.scale = optimalScale;
+            
+            // Center Horizontally
             const contentCenterX = treeBounds.width / 2;
             state.target.x = (vw / 2) - (contentCenterX * state.target.scale);
-            state.target.y = 50; 
             
+            // Center Vertically
+            const contentHeight = treeBounds.height * state.target.scale;
+            // Calculate margin to center vertically
+            let topMargin = (vh - contentHeight) / 2;
+            
+            // If the tree is taller than the viewport (negative margin), 
+            // or if the margin puts it too high up, pin it to a safe top margin (e.g., 100px)
+            // so the Root Node is always visible and not cut off or hidden under the header.
+            if (topMargin < 100) topMargin = 100;
+            
+            state.target.y = topMargin;
+            
+            // Sync states immediately to prevent animation lag
             state.current.x = state.target.x;
             state.current.y = state.target.y;
             state.current.scale = state.target.scale;
+
+            // FIX: Force immediate render so it's visible without waiting for user interaction/animation loop
+            document.getElementById('canvas').style.transform = `translate(${state.current.x}px,${state.current.y}px) scale(${state.current.scale})`;
         }
 
         // ======================= SEARCH LOGIC =======================
@@ -685,7 +768,7 @@
             searchResults.classList.remove('hidden');
             matches.slice(0, 8).forEach(p => {
                 const el = document.createElement('div');
-                el.className = 'p-3 hover:bg-gray-800 cursor-pointer flex items-center gap-3 border-b border-gray-800 last:border-0 transition-colors';
+                el.className = 'p-3 hover:bg-gray-800 cursor-pointer flex items-center gap-3 border-b border-gray-800 last:border-0 transition-colors duration-200';
                 el.innerHTML = `
                     <img src="${p.photo}" class="w-8 h-8 rounded-full object-cover bg-gray-900 border border-gray-700">
                     <div>
