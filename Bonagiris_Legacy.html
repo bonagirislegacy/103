@@ -58,7 +58,6 @@
 </head>
 <body>
     <!-- ================= UI HEADER ================= -->
-    <!-- Updated classes for mobile responsiveness: flex-col on mobile, padding adjustments -->
     <div class="fixed top-0 left-0 w-full z-50 pointer-events-none transition-opacity duration-300" id="tree-ui" style="opacity: 1;">
         <div class="bg-black/80 backdrop-blur-md border-b border-gray-800 px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row justify-between items-center pointer-events-auto shadow-md gap-3 md:gap-0">
             
@@ -218,6 +217,9 @@
         let treeBounds = { width: 0, height: 0 }; 
         const state = { current: { x: 0, y: 0, scale: 0.5 }, target: { x: 0, y: 0, scale: 0.5 }, isDragging: false, lastMouse: { x: 0, y: 0 } };
 
+        // FIX: GLOBAL STORE FOR STRUCTURE DATA
+        let globalStructureCSV = null;
+
         function initDatabases() {
             if (!GOOGLE_SHEET_STRUCTURE_URL && !GOOGLE_SHEET_DETAILS_URL) {
                 updateStatus("Local Mode");
@@ -267,6 +269,14 @@
                 csv += rowData.join("|") + "\n";
             });
             processDetailsDB(csv);
+
+            // FIX: RACE CONDITION HANDLER
+            // If the structure (tree layout) was loaded BEFORE these details arrived,
+            // we must re-process the structure now to ensure the photos are applied.
+            if(globalStructureCSV) {
+                console.log("Details arrived after structure. Refreshing tree to apply photos.");
+                processStructureDB(globalStructureCSV);
+            }
         };
 
         window.handleStructureResponse = function(json) {
@@ -281,6 +291,9 @@
                 }
                 csv += rowData.join("|") + "\n";
             });
+            
+            // FIX: Store the CSV so we can re-use it if details arrive later
+            globalStructureCSV = csv;
             processStructureDB(csv);
             
             const statusEl = document.getElementById('status-text');
