@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bonagiri's Legacy - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Playfair Display', 'serif'] },
+                    colors: { dark: { bg: '#000000', card: '#121212', accent: '#6366F1' } }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-black text-gray-200 h-screen w-screen overflow-hidden flex flex-col font-sans">
+
+    <!-- Navbar -->
+    <nav class="border-b border-gray-800 bg-[#050505] px-4 py-3 md:px-6 md:py-4 flex justify-between items-center z-50 shrink-0">
+        <h1 class="text-lg md:text-xl font-serif font-bold text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-red-500">admin_panel_settings</span>
+            <span class="hidden md:inline">Admin Console</span>
+            <span class="md:hidden">Admin</span>
+        </h1>
+        <div class="flex items-center gap-3 md:gap-4">
+            <a href="Bonagiris_Legacy.html" target="_blank" class="text-xs md:text-sm text-gray-400 hover:text-white transition flex items-center gap-1">
+                Tree <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+            </a>
+            <div class="h-4 w-px bg-gray-800 mx-1"></div>
+            <button onclick="logout()" id="logout-btn" class="hidden text-red-400 hover:text-red-300 text-xs md:text-sm">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="flex-1 relative flex justify-center items-center p-2 md:p-4 overflow-hidden w-full">
+        
+        <!-- Login Form -->
+        <div id="admin-login-container" class="w-full max-w-sm bg-[#121212] border border-gray-800 p-6 md:p-8 rounded-xl shadow-2xl relative z-50">
+            <h2 class="text-2xl font-serif text-white mb-2 text-center">Admin Access</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-500 uppercase tracking-widest mb-1">Admin Password</label>
+                    <input type="password" id="admin-pass" class="w-full bg-[#0A0A0A] border border-gray-700 rounded p-3 text-white focus:border-red-500 outline-none">
+                </div>
+                <button onclick="handleAdminLogin()" id="login-btn" class="w-full bg-red-900 hover:bg-red-800 text-white font-medium py-3 rounded transition flex justify-center items-center">
+                    <span>Access Dashboard</span>
+                </button>
+                <p id="login-msg" class="text-center text-sm text-red-400 mt-2 h-5"></p>
+            </div>
+            <div class="mt-6 pt-6 border-t border-gray-800 text-center">
+                 <p class="text-[10px] text-gray-600">Default: <span class="font-mono text-gray-500">bonagiri_admin</span></p>
+            </div>
+        </div>
+
+        <!-- Dashboard (Hidden initially) -->
+        <div id="dashboard-container" class="hidden w-full max-w-6xl h-full flex flex-col md:flex-row gap-4 relative">
+            
+            <!-- Left: Request List -->
+            <div id="request-list-panel" class="w-full md:w-1/3 bg-[#121212] border border-gray-800 rounded-xl flex flex-col overflow-hidden h-full z-10 relative">
+                <div class="p-4 border-b border-gray-800 bg-[#1A1A1A] flex justify-between items-center shrink-0">
+                    <h3 class="font-bold text-gray-300">Requests</h3>
+                    <button onclick="refreshRequests()" class="text-xs bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-white transition">Refresh</button>
+                </div>
+                <div id="request-list" class="flex-1 overflow-y-auto p-2 space-y-2">
+                    <div class="text-center text-gray-600 mt-10 text-sm">Loading requests...</div>
+                </div>
+            </div>
+
+            <!-- Right: Details & Action -->
+            <!-- Mobile: Absolute overlay. Desktop: Relative side-panel -->
+            <div id="review-panel-container" class="hidden md:flex w-full md:w-2/3 bg-[#121212] border border-gray-800 rounded-xl flex-col overflow-hidden h-full absolute md:relative inset-0 z-30 md:z-auto shadow-2xl md:shadow-none">
+                
+                <!-- Empty State (Visible only when no request is selected on Desktop) -->
+                <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-gray-600 z-0 bg-[#121212]">
+                    <span class="material-symbols-outlined text-4xl mb-2 opacity-50">pending_actions</span>
+                    <p>Select a request to review</p>
+                </div>
+
+                <!-- Actual Review Panel (Hidden until selected) -->
+                <div id="review-panel" class="hidden h-full flex-col w-full bg-[#121212] z-10 relative">
+                    <!-- Header -->
+                    <div class="p-4 border-b border-gray-800 flex justify-between items-start bg-[#1A1A1A] shrink-0">
+                        <div class="flex items-start gap-3">
+                            <button class="md:hidden text-gray-400 hover:text-white pt-1 mr-2 border-r border-gray-700 pr-3" onclick="closeMobileReview()">
+                                <span class="material-symbols-outlined">arrow_back</span>
+                            </button>
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="material-symbols-outlined text-indigo-400 hidden md:inline">person</span>
+                                    <h2 class="text-lg md:text-xl font-serif text-white leading-tight" id="req-name">User Name</h2>
+                                </div>
+                                <p class="text-xs text-gray-500 font-mono" id="req-id">ID: 000</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] text-gray-500 uppercase tracking-widest block">Requested</span>
+                            <span class="text-xs md:text-sm text-gray-300" id="req-date">...</span>
+                        </div>
+                    </div>
+
+                    <!-- Scrollable Content -->
+                    <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+                        
+                        <!-- Photo Check -->
+                        <div id="photo-change-section" class="hidden">
+                            <h4 class="text-xs text-indigo-400 font-bold uppercase tracking-widest mb-4">Profile Photo Update</h4>
+                            <div class="flex items-center gap-4 bg-black/30 p-4 rounded-lg border border-gray-800">
+                                <div class="text-center">
+                                    <p class="text-[10px] text-gray-500 mb-2">NEW PHOTO</p>
+                                    <img id="req-photo-new" src="" class="w-24 h-24 rounded-full object-cover border-2 border-green-500 bg-gray-900">
+                                </div>
+                                <div class="text-xs text-gray-500 flex-1">
+                                    This user has requested to update their profile picture.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Text Fields -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="group">
+                                <label class="block text-xs text-gray-500 uppercase mb-1">Location</label>
+                                <div class="bg-[#0A0A0A] border border-gray-700 p-3 rounded text-green-400 font-medium text-sm min-h-[45px] flex items-center" id="req-loc"></div>
+                            </div>
+                            <div class="group">
+                                <label class="block text-xs text-gray-500 uppercase mb-1">Occupation</label>
+                                <div class="bg-[#0A0A0A] border border-gray-700 p-3 rounded text-green-400 font-medium text-sm min-h-[45px] flex items-center" id="req-occ"></div>
+                            </div>
+                            <div class="group">
+                                <label class="block text-xs text-gray-500 uppercase mb-1">Date of Birth</label>
+                                <div class="bg-[#0A0A0A] border border-gray-700 p-3 rounded text-green-400 font-medium text-sm min-h-[45px] flex items-center" id="req-dob"></div>
+                            </div>
+                            <div class="group">
+                                <label class="block text-xs text-gray-500 uppercase mb-1">Date of Death</label>
+                                <div class="bg-[#0A0A0A] border border-gray-700 p-3 rounded text-green-400 font-medium text-sm min-h-[45px] flex items-center" id="req-dod"></div>
+                            </div>
+                        </div>
+                        <div class="group">
+                             <label class="block text-xs text-gray-500 uppercase mb-1">Biography</label>
+                             <div class="bg-[#0A0A0A] border border-gray-700 p-3 rounded text-green-400 text-sm leading-relaxed min-h-[100px]" id="req-bio"></div>
+                        </div>
+                    </div>
+
+                    <!-- Footer Actions -->
+                    <div class="p-4 md:p-6 border-t border-gray-800 bg-[#1A1A1A] flex gap-3 shrink-0">
+                        <button onclick="processRequest('reject')" class="flex-1 bg-red-900/50 hover:bg-red-900 border border-red-800 text-red-200 py-3 rounded-lg font-medium transition flex justify-center items-center gap-2 text-sm">
+                            <span class="material-symbols-outlined text-[18px]">close</span> Reject
+                        </button>
+                        <button onclick="processRequest('approve')" class="flex-1 bg-green-900/50 hover:bg-green-900 border border-green-800 text-green-200 py-3 rounded-lg font-medium transition flex justify-center items-center gap-2 text-sm">
+                            <span class="material-symbols-outlined text-[18px]">check</span> Approve
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 md:translate-x-0 md:left-auto md:bottom-5 md:right-5 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-xl translate-y-32 transition-transform duration-300 flex items-center gap-3 border border-gray-700 z-[100] w-max max-w-[90%]">
+        <span id="toast-icon" class="material-symbols-outlined text-green-400">check_circle</span>
+        <span id="toast-msg">Action Completed</span>
+    </div>
+
+    <script>
+        // ======================================================
+        // PASTE YOUR NEW GOOGLE APPS SCRIPT WEB APP URL HERE
+        // ======================================================
+        const API_URL = "https://script.google.com/macros/s/AKfycbxvg_WIWee5_bz2Ox_XcRuRyGJ_ntnX7WFe9AckY7UImy75w6VvPEzr_PEEIGCtC3Mf7Q/exec";
+        // ======================================================
+
+        let adminToken = null;
+        let currentRequests = [];
+        let selectedRequest = null;
+
+        async function callScript(data) {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(data),
+                redirect: "follow"
+            });
+            return await response.json();
+        }
+
+        function handleAdminLogin() {
+            const pass = document.getElementById('admin-pass').value.trim();
+            const btn = document.getElementById('login-btn');
+            const msg = document.getElementById('login-msg');
+
+            if(!pass) return;
+            btn.innerHTML = `Verifying...`; btn.disabled = true;
+
+            callScript({ action: "admin_login", password: pass })
+            .then(data => {
+                if(data.success) {
+                    adminToken = pass;
+                    document.getElementById('admin-login-container').classList.add('hidden');
+                    document.getElementById('dashboard-container').classList.remove('hidden');
+                    document.getElementById('dashboard-container').classList.add('flex');
+                    document.getElementById('logout-btn').classList.remove('hidden');
+                    refreshRequests();
+                } else {
+                    msg.textContent = "Access Denied.";
+                    btn.innerHTML = "Access Dashboard"; btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                msg.textContent = "Connection Error.";
+                btn.innerHTML = "Access Dashboard"; btn.disabled = false;
+            });
+        }
+
+        function refreshRequests() {
+            const list = document.getElementById('request-list');
+            list.innerHTML = `<div class="flex justify-center p-4"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div></div>`;
+
+            callScript({ action: "get_pending_requests", password: adminToken })
+            .then(data => {
+                currentRequests = data.requests || [];
+                renderList();
+            })
+            .catch(err => { list.innerHTML = `<div class="text-center text-red-400 mt-10 text-xs">Failed to load.</div>`; });
+        }
+
+        function renderList() {
+            const list = document.getElementById('request-list');
+            list.innerHTML = "";
+            if(currentRequests.length === 0) {
+                list.innerHTML = `<div class="text-center text-gray-500 mt-10 text-sm">No pending requests.<br>All clear!</div>`;
+                return;
+            }
+            currentRequests.forEach(req => {
+                const item = document.createElement('div');
+                item.className = `p-3 rounded-lg cursor-pointer border border-transparent hover:bg-gray-800 transition mb-2 ${selectedRequest && selectedRequest.reqId === req.reqId ? 'bg-gray-800 border-gray-700 ring-1 ring-gray-600' : 'bg-[#0A0A0A]'}`;
+                item.onclick = () => selectRequest(req);
+                item.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="font-bold text-gray-200 text-sm line-clamp-1">${req.name}</span>
+                        <span class="text-[10px] text-gray-500 bg-gray-900 px-1.5 py-0.5 rounded whitespace-nowrap">${req.timestamp.split('T')[0]}</span>
+                    </div>
+                    <div class="text-xs text-gray-500 font-mono">ID: ${req.userId}</div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function selectRequest(req) {
+            selectedRequest = req;
+            renderList();
+
+            const container = document.getElementById('review-panel-container');
+            const emptyState = document.getElementById('empty-state');
+            const panel = document.getElementById('review-panel');
+
+            // --- MOBILE HANDLING ---
+            // On mobile, the container is hidden by default. We must show it.
+            // We use 'flex' to show it (overriding hidden).
+            container.classList.remove('hidden');
+            container.classList.add('flex');
+
+            // --- CONTENT TOGGLING ---
+            // Hide placeholder, show actual panel
+            emptyState.classList.add('hidden');
+            panel.classList.remove('hidden');
+            panel.classList.add('flex'); // Ensure flex is added for layout
+
+            // Populate Data
+            document.getElementById('req-name').textContent = req.name || "Unknown";
+            document.getElementById('req-id').textContent = `Family ID: ${req.userId}`;
+            document.getElementById('req-date').textContent = req.timestamp ? new Date(req.timestamp).toLocaleString() : "-";
+
+            document.getElementById('req-loc').textContent = req.location || "No change";
+            document.getElementById('req-occ').textContent = req.occupation || "No change";
+            document.getElementById('req-bio').textContent = req.bio || "No change";
+            document.getElementById('req-dob').textContent = req.dob || "No change";
+            document.getElementById('req-dod').textContent = req.dod || "None";
+
+            const photoSec = document.getElementById('photo-change-section');
+            if(req.photoData) {
+                photoSec.classList.remove('hidden');
+                document.getElementById('req-photo-new').src = req.photoData;
+            } else { photoSec.classList.add('hidden'); }
+        }
+
+        function closeMobileReview() {
+            // This is ONLY called by the back button which is visible ONLY on mobile
+            const container = document.getElementById('review-panel-container');
+            
+            // Hide the container entirely on mobile
+            container.classList.add('hidden');
+            container.classList.remove('flex');
+            
+            // Note: We do NOT reset selectedRequest here, so the list still shows what was last clicked.
+            // If we wanted to deselect: selectedRequest = null; renderList();
+            
+            // IMPORTANT: Reset Desktop state just in case of weird resize events
+            // If screen is resized to desktop later, CSS media queries (md:flex) will take over,
+            // but we need to ensure the empty state logic is sound.
+            // However, 'md:flex' in HTML handles the container visibility on desktop.
+        }
+
+        function processRequest(decision) {
+            if(!selectedRequest) return;
+            showToast(`Processing ${decision}...`, 'pending');
+            
+            callScript({ 
+                action: decision === 'approve' ? "approve_request" : "reject_request",
+                password: adminToken,
+                reqId: selectedRequest.reqId
+            })
+            .then(data => {
+                if(data.success) {
+                    showToast(`Request ${decision}d successfully!`, 'success');
+                    
+                    // Cleanup UI
+                    selectedRequest = null;
+                    
+                    // Reset Panel UI
+                    document.getElementById('review-panel').classList.add('hidden');
+                    document.getElementById('review-panel').classList.remove('flex');
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    
+                    // If on mobile, close the overlay
+                    if(window.innerWidth < 768) {
+                        closeMobileReview();
+                    }
+                    
+                    refreshRequests();
+                } else { showToast(`Error: ${data.message}`, 'error'); }
+            })
+            .catch(err => { showToast("Connection failed", 'error'); });
+        }
+
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const txt = document.getElementById('toast-msg');
+            txt.textContent = msg;
+            toast.classList.remove('translate-y-32');
+            if(type === 'success') icon.className = "material-symbols-outlined text-green-400";
+            else if(type === 'error') icon.className = "material-symbols-outlined text-red-400";
+            else icon.className = "material-symbols-outlined text-yellow-400 animate-spin";
+            if(type !== 'pending') { setTimeout(() => { toast.classList.add('translate-y-32'); }, 3000); }
+        }
+
+        function logout() { adminToken = null; location.reload(); }
+    </script>
+</body>
+</html>
